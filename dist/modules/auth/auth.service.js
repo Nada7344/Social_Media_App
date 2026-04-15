@@ -121,7 +121,7 @@ class AuthenticationService {
     async login(inputs, issuer) {
         const { email, password } = inputs;
         const user = await this.userRepository.findOne({
-            filter: { email, provider: user_enum_js_1.ProviderEnum.SYSTEM, confirmEmail: { $exists: false } },
+            filter: { email, provider: user_enum_js_1.ProviderEnum.SYSTEM, confirmEmail: { $exists: true } },
             options: { lean: false }
         });
         console.log(user);

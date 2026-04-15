@@ -164,7 +164,7 @@ async resendConfirmEmail ({email}:{email:string})  {
     const { email, password } = inputs;
   const user = await this.userRepository.findOne({
    
-    filter: { email, provider: ProviderEnum.SYSTEM,confirmEmail: { $exists: false}},
+    filter: { email, provider: ProviderEnum.SYSTEM,confirmEmail: { $exists: true}},
     options:{lean:false}
   });
 
