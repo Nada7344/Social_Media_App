@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.APPLICATION_NAME = exports.EMAIL = exports.EMAIL_APP_PASSWORD = exports.REDIS_URI = exports.REFRESH_TOKEN_EXPIRES_IN = exports.ACCESS_TOKEN_EXPIRES_IN = exports.SYSTEM_REFRESH_TOKEN_SECRET_KEY = exports.SYSTEM_ACCESS_TOKEN_SECRET_KEY = exports.USER_REFRESH_TOKEN_SECRET_KEY = exports.USER_ACCESS_TOKEN_SECRET_KEY = exports.ENC_SECRET_KEY = exports.IV_LENGTH = exports.SALT_ROUND = exports.DB_URI = exports.PORT = void 0;
+exports.APPLICATION_NAME = exports.EMAIL = exports.EMAIL_APP_PASSWORD = exports.GOOGLE_CLIENT_ID = exports.REDIS_URI = exports.REFRESH_TOKEN_EXPIRES_IN = exports.ACCESS_TOKEN_EXPIRES_IN = exports.SYSTEM_REFRESH_TOKEN_SECRET_KEY = exports.SYSTEM_ACCESS_TOKEN_SECRET_KEY = exports.USER_REFRESH_TOKEN_SECRET_KEY = exports.USER_ACCESS_TOKEN_SECRET_KEY = exports.ENC_SECRET_KEY = exports.IV_LENGTH = exports.SALT_ROUND = exports.DB_URI = exports.PORT = void 0;
 const node_path_1 = require("node:path");
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)({ path: (0, node_path_1.resolve)(`./.env.${process.env.NODE_ENV || 'develpoment'}`) });
@@ -16,6 +16,7 @@ exports.SYSTEM_REFRESH_TOKEN_SECRET_KEY = process.env.SYSTEM_REFRESH_TOKEN_SECRE
 exports.ACCESS_TOKEN_EXPIRES_IN = parseInt(process.env.ACCESS_TOKEN_EXPIRES_IN);
 exports.REFRESH_TOKEN_EXPIRES_IN = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN);
 exports.REDIS_URI = process.env.REDIS_URI;
+exports.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 exports.EMAIL_APP_PASSWORD = process.env.EMAIL_APP_PASSWORD;
 exports.EMAIL = process.env.EMAIL;
 exports.APPLICATION_NAME = process.env.APPLICATION_NAME;

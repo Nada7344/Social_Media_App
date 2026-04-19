@@ -12,6 +12,8 @@ import { RedisService, redisService } from "../../common/services/redis.service.
 import { createNumberOtp } from "../../common/utils/otp.js";
 import { ProviderEnum } from "../../common/enums/user.enum.js";
 import { TokenService } from "../../common/services/token.service.js";
+import { OAuth2Client, TokenPayload } from "google-auth-library";
+import { GOOGLE_CLIENT_ID } from "../../config/config.js";
 
  class AuthenticationService {
     private userRepository :UserRepository
@@ -23,6 +25,79 @@ import { TokenService } from "../../common/services/token.service.js";
       this.redis = redisService
       this.tokenService = new TokenService()
     }
+
+private async verifyGoogleAccount (idToken :string):Promise<TokenPayload >{
+  const client = new OAuth2Client();
+
+  const ticket = await client.verifyIdToken({
+    idToken,
+    audience:GOOGLE_CLIENT_ID,
+  });
+  const payload = ticket.getPayload();
+  if (!payload?.email_verified){
+    throw new BadRequestException("Fail to verify by google")
+  }
+  return payload;
+};
+
+ async  signupWithGmail (idToken:string, issuer:string) {
+  const payload = await this.verifyGoogleAccount(idToken);
+  console.log({ payload });
+  
+ if (!payload?.email){
+    throw new BadRequestException("Fail to verify by google")
+  }
+  const checkUserExist = await this.userRepository.findOne({
+    filter: { email: payload.email },
+    
+  });
+
+  if (checkUserExist) {
+    if (checkUserExist.provider != ProviderEnum.GOOGLE) {
+      throw new ConflictException("invalid login provider" );
+    }
+    return { status: 200, credentials: await this.loginWithGmail(idToken, issuer) };
+  }
+
+  const user = await this.userRepository.createOne({
+   
+    data: [
+      {
+        firstName: payload.given_name,
+        lastName: payload.family_name,
+        email: payload.email,
+        profileImage: payload.picture,
+        confirmEmail: new Date(),
+        provider: ProviderEnum.GOOGLE,
+      },
+    ],
+  });
+  return {
+    status: 201,
+    credentials: await this.tokenService.createLoginCredentials({user, issuer}),
+  };
+};
+
+async loginWithGmail  (idToken :string, issuer:string)  {
+  const payload = await this.verifyGoogleAccount(idToken);
+  console.log({ payload });
+
+   if (!payload?.email){
+    throw new BadRequestException("Fail to verify by google")
+  }
+  const user = await this.userRepository.findOne({
+    filter: { email: payload.email, provider: ProviderEnum.GOOGLE },
+    
+  });
+
+  if (!user) {
+    throw new NotFoundException("Not regester account" );
+  }
+
+  return await this.tokenService.createLoginCredentials({user, issuer});
+};
+
+
 
 
 
@@ -45,8 +120,8 @@ import { TokenService } from "../../common/services/token.service.js";
        firstName, 
        lastName,
         email,
-        password: await generateHash({ plaintext: password }),
-        phone: await generateEncryption(phone),
+        password,
+        phone,
       },
     ],
   });

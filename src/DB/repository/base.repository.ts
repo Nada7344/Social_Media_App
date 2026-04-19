@@ -47,6 +47,18 @@ export abstract class BaseRepository<TRawDocument> {
         return doc as HydratedDocument<TRawDocument>
     }
 
+    //insertMany
+     async insertMany({
+        data,
+       
+    }: {
+        data: AnyKeys<TRawDocument>[],
+       
+    }): Promise<HydratedDocument<TRawDocument>[]>{
+       return  await this.model.insertMany(data as any) as HydratedDocument<TRawDocument>[] ;
+    }
+
+
     //find
     async findOne({
         filter,

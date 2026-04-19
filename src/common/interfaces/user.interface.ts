@@ -16,6 +16,8 @@ export interface IUser {
     gender:GenderEnum;
     createdAt:Date;
     updatedAt:Date;
+    deletedAt:Date;
+    restoredAt:Date;
     provider:ProviderEnum;
     changeCredentialTime:Date;
 }

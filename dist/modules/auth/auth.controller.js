@@ -58,4 +58,8 @@ router.post('/login', (0, validation_middleware_js_1.validation)(validators.logi
     const data = await auth_service_1.default.login(req.body, `${req.protocol}//${req.host}`);
     return (0, success_response_js_1.successResponse)({ res, data });
 });
+router.post("/signup/gmail", async (req, res, next) => {
+    const { status, credentials } = await auth_service_1.default.signupWithGmail(req.body.idToken, `${req.protocol}//${req.host}`);
+    return (0, success_response_js_1.successResponse)({ res, status, data: { ...credentials } });
+});
 exports.default = router;

@@ -36,4 +36,8 @@ router.post('/login',
         return successResponse<ILoginResponse>({ res, data })
     })
 
+router.post("/signup/gmail", async (req, res, next) => {
+    const {status ,credentials} = await authService.signupWithGmail(req.body.idToken,`${req.protocol}//${req.host}`);    
+    return successResponse({res ,status , data :{...credentials}})
+})
 export default router;

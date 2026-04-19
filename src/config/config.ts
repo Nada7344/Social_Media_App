@@ -18,6 +18,7 @@ export const SYSTEM_REFRESH_TOKEN_SECRET_KEY =process.env.SYSTEM_REFRESH_TOKEN_S
 export const ACCESS_TOKEN_EXPIRES_IN = parseInt(process.env.ACCESS_TOKEN_EXPIRES_IN as string)
 export const REFRESH_TOKEN_EXPIRES_IN =parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN as string)
 export const REDIS_URI = process.env.REDIS_URI as string
+export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID as string
 export const EMAIL_APP_PASSWORD = process.env.EMAIL_APP_PASSWORD
 export const EMAIL = process.env.EMAIL
 export const APPLICATION_NAME = process.env.APPLICATION_NAME

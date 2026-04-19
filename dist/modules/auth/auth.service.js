@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const user_repository_js_1 = require("../../DB/repository/user.repository.js");
 const domain_exception_js_1 = require("../../common/exceptions/domain.exception.js");
 const hash_security_js_1 = require("../../common/utils/security/hash.security.js");
-const encryption_security_js_1 = require("../../common/utils/security/encryption.security.js");
 const send_email_js_1 = require("../../common/utils/email/send.email.js");
 const template_email_js_1 = require("../../common/utils/email/template.email.js");
 const email_enum_js_1 = require("../../common/enums/email.enum.js");
@@ -12,6 +11,8 @@ const redis_service_js_1 = require("../../common/services/redis.service.js");
 const otp_js_1 = require("../../common/utils/otp.js");
 const user_enum_js_1 = require("../../common/enums/user.enum.js");
 const token_service_js_1 = require("../../common/services/token.service.js");
+const google_auth_library_1 = require("google-auth-library");
+const config_js_1 = require("../../config/config.js");
 class AuthenticationService {
     userRepository;
     redis;
@@ -21,6 +22,67 @@ class AuthenticationService {
         this.redis = redis_service_js_1.redisService;
         this.tokenService = new token_service_js_1.TokenService();
     }
+    async verifyGoogleAccount(idToken) {
+        const client = new google_auth_library_1.OAuth2Client();
+        const ticket = await client.verifyIdToken({
+            idToken,
+            audience: config_js_1.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        if (!payload?.email_verified) {
+            throw new domain_exception_js_1.BadRequestException("Fail to verify by google");
+        }
+        return payload;
+    }
+    ;
+    async signupWithGmail(idToken, issuer) {
+        const payload = await this.verifyGoogleAccount(idToken);
+        console.log({ payload });
+        if (!payload?.email) {
+            throw new domain_exception_js_1.BadRequestException("Fail to verify by google");
+        }
+        const checkUserExist = await this.userRepository.findOne({
+            filter: { email: payload.email },
+        });
+        if (checkUserExist) {
+            if (checkUserExist.provider != user_enum_js_1.ProviderEnum.GOOGLE) {
+                throw new domain_exception_js_1.ConflictException("invalid login provider");
+            }
+            return { status: 200, credentials: await this.loginWithGmail(idToken, issuer) };
+        }
+        const user = await this.userRepository.createOne({
+            data: [
+                {
+                    firstName: payload.given_name,
+                    lastName: payload.family_name,
+                    email: payload.email,
+                    profileImage: payload.picture,
+                    confirmEmail: new Date(),
+                    provider: user_enum_js_1.ProviderEnum.GOOGLE,
+                },
+            ],
+        });
+        return {
+            status: 201,
+            credentials: await this.tokenService.createLoginCredentials({ user, issuer }),
+        };
+    }
+    ;
+    async loginWithGmail(idToken, issuer) {
+        const payload = await this.verifyGoogleAccount(idToken);
+        console.log({ payload });
+        if (!payload?.email) {
+            throw new domain_exception_js_1.BadRequestException("Fail to verify by google");
+        }
+        const user = await this.userRepository.findOne({
+            filter: { email: payload.email, provider: user_enum_js_1.ProviderEnum.GOOGLE },
+        });
+        if (!user) {
+            throw new domain_exception_js_1.NotFoundException("Not regester account");
+        }
+        return await this.tokenService.createLoginCredentials({ user, issuer });
+    }
+    ;
     async signup({ username, email, password, phone }) {
         const [firstName, lastName] = username.split(" ");
         const checkUserExist = await this.userRepository.findOne({
@@ -37,8 +99,8 @@ class AuthenticationService {
                     firstName,
                     lastName,
                     email,
-                    password: await (0, hash_security_js_1.generateHash)({ plaintext: password }),
-                    phone: await (0, encryption_security_js_1.generateEncryption)(phone),
+                    password,
+                    phone,
                 },
             ],
         });
