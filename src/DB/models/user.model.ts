@@ -63,7 +63,7 @@ const  userSchema = new Schema<IUser>({
     toJSON :{virtuals :true},
     toObject:{virtuals :true}
 })
-
+ 
 userSchema.virtual("username").set(function(this:IUser ,value:string){
     const [firstName ,lastName]=value.split(" ");
     this.firstName = firstName as string;
@@ -75,10 +75,7 @@ userSchema.virtual("username").set(function(this:IUser ,value:string){
 //Hooks 
 
 userSchema.pre("save",async function () {
-  //console.log("pre one" ,this);
-  console.log(this.modifiedPaths(),this.isModified("password"),this.isNew );
-  console.log(this.isInit("email"));
-  
+
   if(this.isModified("password")){
     this.password = await generateHash({plaintext:this.password})
   }
@@ -129,9 +126,6 @@ userSchema.pre("save",async function () {
 
 //soft delete
   userSchema.pre(["findOne","find"],async function () {
-  //console.log(this );
-    console.log(this.getFilter() );
-     console.log(this.getQuery() );
     const query=this.getQuery();
     if(query.paranoid ===false){
     this.setQuery({...query})
@@ -144,36 +138,6 @@ userSchema.pre("save",async function () {
  })
  
 
-//  userSchema.pre("insertMany",async function (docs) {
-//   console.log(this ,docs);
-  
-//  })
-
-
-//  userSchema.post("insertMany",async function (docs ,next) {
-//   console.log(this ,docs);
-//   next()
-//  })
-
-
-// userSchema.pre("updateOne",{document:true},async function () {
-//   console.log(this);
-  
-// })
-
-// userSchema.post("save",async function(){
-//   if(this.isNew){
-//     await sendEmail({to:this.email,subject:"confirm email",html:"hallo"})
-//   }
-// })
-
-
-// userSchema.pre("validate",function(){
-//   console.log("pre validate");
-//   if(this.password && this.provider==ProviderEnum.GOOGLE){
-//     throw new BadRequestException("Google account can not hold password")
-//   }
-// })
 
 
 export const UserModel= models.User|| model<IUser>("User",userSchema)

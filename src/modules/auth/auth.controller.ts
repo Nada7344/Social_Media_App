@@ -9,14 +9,14 @@ import { validation } from '../../middleware/validation.middleware.js';
 const router: RouterType = Router();
 
 router.post('/signup', validation(validators.signup),
- async (req: Request, res: Response, next: NextFunction):Promise<Response> => {
-    const data = await authService.signup(req.body)
-    return successResponse<any>({ res, data })
-})
+    async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+        const data = await authService.signup(req.body)
+        return successResponse<any>({ res, data })
+    })
 
 router.patch('/confirm-email',
     validation(validators.confirmEmail),
-    async (req: Request, res: Response, next: NextFunction):Promise<Response> => {
+    async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
         await authService.confirmEmail(req.body)
         return successResponse({ res })
     })
@@ -24,20 +24,45 @@ router.patch('/confirm-email',
 
 router.patch('/resend-confirm-email',
     validation(validators.resendConfirmEmail),
-    async (req: Request, res: Response, next: NextFunction):Promise<Response> => {
+    async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
         await authService.confirmEmail(req.body)
         return successResponse({ res })
     })
 
+
 router.post('/login',
     validation(validators.login),
-    async (req: Request, res: Response, next: NextFunction):Promise<Response> => {
+    async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
         const data = await authService.login(req.body, `${req.protocol}//${req.host}`)
         return successResponse<ILoginResponse>({ res, data })
     })
 
+
+
+
+router.patch("/request-forgot-password", validation(validators.resendConfirmEmail), 
+async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+
+    await authService.forgotPasswordOtp(req.body);
+    return successResponse({ res })
+});
+
+router.patch("/verify-forgot-password", validation(validators.confirmEmail),
+    async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+
+        await authService.verifyForgotPasswordOtp(req.body);
+        return successResponse({ res })
+    });
+
+router.patch("/reset-forgot-password", validation(validators.resetForgotPassword), 
+    async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+
+    await authService.resetForgotPasswordOtp(req.body);
+    return successResponse({ res })
+});
+
 router.post("/signup/gmail", async (req, res, next) => {
-    const {status ,credentials} = await authService.signupWithGmail(req.body.idToken,`${req.protocol}//${req.host}`);    
-    return successResponse({res ,status , data :{...credentials}})
+    const { status, credentials } = await authService.signupWithGmail(req.body.idToken, `${req.protocol}//${req.host}`);
+    return successResponse({ res, status, data: { ...credentials } })
 })
 export default router;

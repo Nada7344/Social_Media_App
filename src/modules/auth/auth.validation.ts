@@ -4,7 +4,8 @@ import { generalValidationFields } from '../../common/validation/general.validat
 export const login = {
     body:z.strictObject({
         email:generalValidationFields.email,
-        password:generalValidationFields.password
+        password:generalValidationFields.password,
+        FCM:z.string().optional()
     })
 }
 
@@ -36,3 +37,17 @@ export const resendConfirmEmail = {
     
    })
 }
+
+export const resetForgotPassword= {
+  
+      body:confirmEmail.body.safeExtend({
+      password: generalValidationFields.password,
+    confirmPassword:generalValidationFields.confirmPassword
+        
+    }).refine((data)=>{
+        return data.password === data.confirmPassword
+
+    },{
+        error:"password mismatch with confirm password"
+    })
+};

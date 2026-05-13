@@ -170,7 +170,7 @@ export abstract class BaseRepository<TRawDocument> {
     }: {
         filter: QueryFilter<TRawDocument>,
       update: UpdateQuery<TRawDocument>,
-      options: QueryOptions<TRawDocument> &  ReturnsNewDoc
+      options?: QueryOptions<TRawDocument> &  ReturnsNewDoc
 
     }):Promise<HydratedDocument<TRawDocument>|null> {
 

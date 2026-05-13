@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resendConfirmEmail = exports.confirmEmail = exports.signup = exports.login = void 0;
+exports.resetForgotPassword = exports.resendConfirmEmail = exports.confirmEmail = exports.signup = exports.login = void 0;
 const zod_1 = require("zod");
 const general_validation_js_1 = require("../../common/validation/general.validation.js");
 exports.login = {
     body: zod_1.z.strictObject({
         email: general_validation_js_1.generalValidationFields.email,
-        password: general_validation_js_1.generalValidationFields.password
+        password: general_validation_js_1.generalValidationFields.password,
+        FCM: zod_1.z.string().optional()
     })
 };
 exports.signup = {
@@ -29,5 +30,15 @@ exports.confirmEmail = {
 exports.resendConfirmEmail = {
     body: zod_1.z.strictObject({
         email: general_validation_js_1.generalValidationFields.email,
+    })
+};
+exports.resetForgotPassword = {
+    body: exports.confirmEmail.body.safeExtend({
+        password: general_validation_js_1.generalValidationFields.password,
+        confirmPassword: general_validation_js_1.generalValidationFields.confirmPassword
+    }).refine((data) => {
+        return data.password === data.confirmPassword;
+    }, {
+        error: "password mismatch with confirm password"
     })
 };

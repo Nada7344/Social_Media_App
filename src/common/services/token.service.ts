@@ -151,7 +151,7 @@ export class TokenService {
         if (user.changeCredentialTime && user.changeCredentialTime?.getTime() >= (decoded.iat as number) * 1000) {
             throw new UnauthorizedException("invalid login session");
         }
-console.log(decoded.aud);
+
         return { user, decoded };
     };
 

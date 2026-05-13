@@ -86,7 +86,6 @@ class TokenService {
         if (user.changeCredentialTime && user.changeCredentialTime?.getTime() >= decoded.iat * 1000) {
             throw new domain_exception_js_1.UnauthorizedException("invalid login session");
         }
-        console.log(decoded.aud);
         return { user, decoded };
     }
     ;

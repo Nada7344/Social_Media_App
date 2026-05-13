@@ -5,17 +5,52 @@ const token_service_js_1 = require("../../common/services/token.service.js");
 const redis_service_js_1 = require("../../common/services/redis.service.js");
 const config_js_1 = require("../../config/config.js");
 const security_enum_js_1 = require("../../common/enums/security.enum.js");
+const s3_service_js_1 = require("../../common/services/s3.service.js");
+const multer_enum_js_1 = require("../../common/enums/multer.enum.js");
+const domain_exception_js_1 = require("../../common/exceptions/domain.exception.js");
 class UserService {
     userRepository;
     redis;
     tokenService;
+    s3;
     constructor() {
         this.userRepository = new user_repository_js_1.UserRepository();
         this.redis = redis_service_js_1.redisService;
         this.tokenService = new token_service_js_1.TokenService();
+        this.s3 = s3_service_js_1.s3Service;
+    }
+    async profileImage(user, file) {
+        const oldPic = user.profileImage;
+        const { Key } = await this.s3.uploadLargeAsset({
+            file,
+            path: `Users/${user._id.toString()}/Profile`,
+            storageApproach: multer_enum_js_1.StorageApproachEnum.DISK
+        });
+        user.profileImage = Key;
+        await user.save();
+        if (oldPic) {
+            await this.s3.deleteAsset({ Key: oldPic });
+        }
+        return user;
+    }
+    async profileCoverImages(user, files) {
+        const oldUrls = user.profileCoversImage;
+        const urls = await this.s3.uploadAssets({
+            files,
+            path: `Users/${user._id.toString()}/Profile/Cover`,
+            storageApproach: multer_enum_js_1.StorageApproachEnum.DISK,
+            uploadApproach: multer_enum_js_1.UploadApproachEnum.LARGE,
+        });
+        user.profileCoversImage = urls;
+        await user.save();
+        if (oldUrls) {
+            await this.s3.deleteAssets({
+                Keys: oldUrls.map(ele => { return { Key: ele }; })
+            });
+        }
+        return user;
     }
     async profile(user) {
-        console.log({ user });
         return user;
     }
     async logout(flag, user, { jti, iat }) {
@@ -52,5 +87,13 @@ class UserService {
         return await this.tokenService.createLoginCredentials({ user, issuer });
     }
     ;
+    async deleteProfile(user) {
+        const account = await this.userRepository.deleteOne({ filter: { _id: user._id, force: true } });
+        if (!account.deletedCount) {
+            throw new domain_exception_js_1.NotFoundException("Invalid Account");
+        }
+        await this.s3.deleteFolderByPrefix({ prefix: `Users/${user._id.toString()}` });
+        return account;
+    }
 }
 exports.default = new UserService();

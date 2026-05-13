@@ -222,6 +222,30 @@ export class RedisService {
 
 
 
+   FCM_key(userId:string|Types.ObjectId) {
+    return `user:FCM:${userId.toString()}`;
+}
+ async  addFCM(userId:string|Types.ObjectId, FCMToken:string) {
+    return await  this.client.sAdd(this.FCM_key(userId), FCMToken);
+}
+
+ async  removeFCM(userId:string|Types.ObjectId, FCMToken:string) {
+    return await  this.client.sRem(this.FCM_key(userId), FCMToken);
+}
+
+ async  getFCMs(userId:string|Types.ObjectId) {
+    return await  this.client.sMembers(this.FCM_key(userId));
+}
+
+ async  hasFCMs(userId:string|Types.ObjectId) {
+    return await  this.client.sCard(this.FCM_key(userId));
+}
+
+ async  removeFCMUser(userId:string|Types.ObjectId) {
+    return await  this.client.del(this.FCM_key(userId));
+}
+
+
 }
 
 export const redisService = new RedisService();

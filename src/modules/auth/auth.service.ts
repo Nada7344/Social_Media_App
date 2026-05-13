@@ -3,7 +3,6 @@ import { UserRepository } from "../../DB/repository/user.repository.js";
 import { confirmEmailDto, LoginDto, signupDto } from "./auth.dto.js";
 import { BadRequestException, ConflictException, NotFoundException } from "../../common/exceptions/domain.exception.js";
 import { compareHash, generateHash } from "../../common/utils/security/hash.security.js";
-import { generateEncryption } from "../../common/utils/security/encryption.security.js";
 import { sendEmail } from "../../common/utils/email/send.email.js";
 import { verifyEmailTemplate } from "../../common/utils/email/template.email.js";
 import { SubjectEnum } from "../../common/enums/email.enum.js";
@@ -14,16 +13,20 @@ import { ProviderEnum } from "../../common/enums/user.enum.js";
 import { TokenService } from "../../common/services/token.service.js";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { GOOGLE_CLIENT_ID } from "../../config/config.js";
+import { ILoginResponse } from "./auth.entity.js";
+import { NotificationService } from "../../common/services/notification.service.js";
 
  class AuthenticationService {
     private userRepository :UserRepository
     private redis :RedisService
     private tokenService :TokenService
+    private readonly notification:NotificationService
 
     constructor(){
       this.userRepository=new UserRepository()
       this.redis = redisService
       this.tokenService = new TokenService()
+      this.notification=new NotificationService()
     }
 
 private async verifyGoogleAccount (idToken :string):Promise<TokenPayload >{
@@ -42,7 +45,7 @@ private async verifyGoogleAccount (idToken :string):Promise<TokenPayload >{
 
  async  signupWithGmail (idToken:string, issuer:string) {
   const payload = await this.verifyGoogleAccount(idToken);
-  console.log({ payload });
+  
   
  if (!payload?.email){
     throw new BadRequestException("Fail to verify by google")
@@ -80,7 +83,7 @@ private async verifyGoogleAccount (idToken :string):Promise<TokenPayload >{
 
 async loginWithGmail  (idToken :string, issuer:string)  {
   const payload = await this.verifyGoogleAccount(idToken);
-  console.log({ payload });
+ 
 
    if (!payload?.email){
     throw new BadRequestException("Fail to verify by google")
@@ -235,16 +238,15 @@ async resendConfirmEmail ({email}:{email:string})  {
 
 
 
-    async login(inputs:LoginDto ,issuer:string){
-    const { email, password } = inputs;
+    async login({ email, password ,FCM }:LoginDto ,issuer:string):Promise<ILoginResponse>{
+   
   const user = await this.userRepository.findOne({
    
     filter: { email, provider: ProviderEnum.SYSTEM,confirmEmail: { $exists: true}},
     options:{lean:false}
   });
 
-  console.log(user);
-  
+
   if (!user) {
     throw new NotFoundException( "invalid login credentials" );
   }
@@ -255,9 +257,83 @@ async resendConfirmEmail ({email}:{email:string})  {
   if (!match) {
     throw new NotFoundException("invalid login credentials" );
   }
+  if(FCM){
+    await this.redis.addFCM(user._id,FCM)
+    const tokens = await this.redis.getFCMs(user._id)
+if(tokens?.length){
+    await this.notification.sendNotfications({tokens ,data:{title:"Login",body:`new login at ${new Date()}`}})
 
+} 
+ }
   return this.tokenService.createLoginCredentials({user, issuer});
   
 }
+
+
+async forgotPasswordOtp ({email}:{email:string})  {
+  
+
+  const account = await this.userRepository.findOne({
+    filter: {
+      email,
+      confirmEmail: { $exists: true },
+      provider: ProviderEnum.SYSTEM,
+    },
+  
+  });
+
+  if (!account) {
+    throw new NotFoundException( "fail to find matching account" );
+  }
+  
+    await this.sendEmailOtp({email ,subject:SubjectEnum.ForgotPassword ,title:"Reset Code"})
+
+  return;
+};
+
+async  verifyForgotPasswordOtp ({ email ,otp }:confirmEmailDto)  {
+
+  const hashOtp = await this.redis.get({ key: this.redis.otpKey({ email ,subject:SubjectEnum.ForgotPassword }) })
+  if(!hashOtp){
+    throw new NotFoundException("expired otp")
+  }
+  if(!await compareHash({plaintext:otp ,ciphertext:hashOtp})){
+    throw new ConflictException("invalid otp")
+  }
+
+  return;
+};
+
+async resetForgotPasswordOtp ({ email ,otp,password }:{email:string ,otp:string,password:string}) {
+
+  await this.verifyForgotPasswordOtp({email, otp})
+  
+  const user = await this.userRepository.findOneAndUpdate({
+    filter: {
+      email,
+      confirmEmail: { $exists: true },
+      provider: ProviderEnum.SYSTEM,
+    },
+   
+    update:{
+      password:await generateHash({plaintext:password}),
+     changeCredentialTime:new Date()
+    }
+  
+  });
+
+  if (!user) {
+    throw new NotFoundException("account not exist" );
+
+  }
+  const  tokenKeys=await this.redis.allKeysByPrefix(this.redis.revokeTokenKeyPrefix({userId:user._id}))
+  const otpKeys =await this.redis.allKeysByPrefix(this.redis.otpKey({email ,subject:SubjectEnum.ForgotPassword}))
+  await this.redis.deleteKey({key :[...tokenKeys,...otpKeys]})
+  return;
+};
+
+
+
+
  }
 export default new AuthenticationService() ;

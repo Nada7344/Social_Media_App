@@ -13,14 +13,17 @@ const user_enum_js_1 = require("../../common/enums/user.enum.js");
 const token_service_js_1 = require("../../common/services/token.service.js");
 const google_auth_library_1 = require("google-auth-library");
 const config_js_1 = require("../../config/config.js");
+const notification_service_js_1 = require("../../common/services/notification.service.js");
 class AuthenticationService {
     userRepository;
     redis;
     tokenService;
+    notification;
     constructor() {
         this.userRepository = new user_repository_js_1.UserRepository();
         this.redis = redis_service_js_1.redisService;
         this.tokenService = new token_service_js_1.TokenService();
+        this.notification = new notification_service_js_1.NotificationService();
     }
     async verifyGoogleAccount(idToken) {
         const client = new google_auth_library_1.OAuth2Client();
@@ -37,7 +40,6 @@ class AuthenticationService {
     ;
     async signupWithGmail(idToken, issuer) {
         const payload = await this.verifyGoogleAccount(idToken);
-        console.log({ payload });
         if (!payload?.email) {
             throw new domain_exception_js_1.BadRequestException("Fail to verify by google");
         }
@@ -70,7 +72,6 @@ class AuthenticationService {
     ;
     async loginWithGmail(idToken, issuer) {
         const payload = await this.verifyGoogleAccount(idToken);
-        console.log({ payload });
         if (!payload?.email) {
             throw new domain_exception_js_1.BadRequestException("Fail to verify by google");
         }
@@ -180,13 +181,11 @@ class AuthenticationService {
         return;
     }
     ;
-    async login(inputs, issuer) {
-        const { email, password } = inputs;
+    async login({ email, password, FCM }, issuer) {
         const user = await this.userRepository.findOne({
             filter: { email, provider: user_enum_js_1.ProviderEnum.SYSTEM, confirmEmail: { $exists: true } },
             options: { lean: false }
         });
-        console.log(user);
         if (!user) {
             throw new domain_exception_js_1.NotFoundException("invalid login credentials");
         }
@@ -197,7 +196,62 @@ class AuthenticationService {
         if (!match) {
             throw new domain_exception_js_1.NotFoundException("invalid login credentials");
         }
+        if (FCM) {
+            await this.redis.addFCM(user._id, FCM);
+            const tokens = await this.redis.getFCMs(user._id);
+            if (tokens?.length) {
+                await this.notification.sendNotfications({ tokens, data: { title: "Login", body: `new login at ${new Date()}` } });
+            }
+        }
         return this.tokenService.createLoginCredentials({ user, issuer });
     }
+    async forgotPasswordOtp({ email }) {
+        const account = await this.userRepository.findOne({
+            filter: {
+                email,
+                confirmEmail: { $exists: true },
+                provider: user_enum_js_1.ProviderEnum.SYSTEM,
+            },
+        });
+        if (!account) {
+            throw new domain_exception_js_1.NotFoundException("fail to find matching account");
+        }
+        await this.sendEmailOtp({ email, subject: email_enum_js_1.SubjectEnum.ForgotPassword, title: "Reset Code" });
+        return;
+    }
+    ;
+    async verifyForgotPasswordOtp({ email, otp }) {
+        const hashOtp = await this.redis.get({ key: this.redis.otpKey({ email, subject: email_enum_js_1.SubjectEnum.ForgotPassword }) });
+        if (!hashOtp) {
+            throw new domain_exception_js_1.NotFoundException("expired otp");
+        }
+        if (!await (0, hash_security_js_1.compareHash)({ plaintext: otp, ciphertext: hashOtp })) {
+            throw new domain_exception_js_1.ConflictException("invalid otp");
+        }
+        return;
+    }
+    ;
+    async resetForgotPasswordOtp({ email, otp, password }) {
+        await this.verifyForgotPasswordOtp({ email, otp });
+        const user = await this.userRepository.findOneAndUpdate({
+            filter: {
+                email,
+                confirmEmail: { $exists: true },
+                provider: user_enum_js_1.ProviderEnum.SYSTEM,
+            },
+            update: {
+                password: await (0, hash_security_js_1.generateHash)({ plaintext: password }),
+                changeCredentialTime: new Date()
+            }
+        });
+        if (!user) {
+            throw new domain_exception_js_1.NotFoundException("account not exist");
+        }
+        const tokenKeys = await this.redis.allKeysByPrefix(this.redis.revokeTokenKeyPrefix({ userId: user._id }));
+        const otpKeys = await this.redis.allKeysByPrefix(this.redis.otpKey({ email, subject: email_enum_js_1.SubjectEnum.ForgotPassword }));
+        await this.redis.deleteKey({ key: [...tokenKeys, ...otpKeys] });
+        return;
+    }
+    ;
 }
 exports.default = new AuthenticationService();
