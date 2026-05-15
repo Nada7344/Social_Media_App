@@ -17,7 +17,7 @@ export class S3Service {
                 accessKeyId: AWS_ACCESS_KEY_ID,
                 secretAccessKey: AWS_SECRAT_ACCESS_KEY
             }
-        })
+        })       
     }
 
 
