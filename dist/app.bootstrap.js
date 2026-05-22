@@ -16,6 +16,7 @@ const s3_service_js_1 = require("./common/services/s3.service.js");
 const node_stream_1 = require("node:stream");
 const node_util_1 = require("node:util");
 const notification_service_js_1 = require("./common/services/notification.service.js");
+const index_js_2 = require("./modules/post/index.js");
 const s3WriteStream = (0, node_util_1.promisify)(node_stream_1.pipeline);
 const bootstrap = async () => {
     const app = (0, express_1.default)();
@@ -23,6 +24,7 @@ const bootstrap = async () => {
     //Application Routing
     app.use('/auth', index_1.authRouter);
     app.use('/user', index_js_1.userRouter);
+    app.use('/post', index_js_2.postRouter);
     app.post("/send-notification", async (req, res, next) => {
         await notification_service_js_1.notificationService.sendNotfication({
             token: req.body.token,

@@ -7,7 +7,6 @@ import {  REFRESH_TOKEN_EXPIRES_IN } from "../../config/config.js";
 import { LogoutEnum } from "../../common/enums/security.enum.js";
 import { s3Service, S3Service } from "../../common/services/s3.service.js";
 import { StorageApproachEnum, UploadApproachEnum } from "../../common/enums/multer.enum.js";
-import { log } from "node:console";
 import { NotFoundException } from "../../common/exceptions/domain.exception.js";
 
 

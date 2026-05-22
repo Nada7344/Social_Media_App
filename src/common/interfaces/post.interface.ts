@@ -1,12 +1,12 @@
 import { Types } from "mongoose";
 import { IUser } from "./user.interface.js";
-import { AvailabilityEnum } from "../enums/Post.enum.js";
+import { AvailabilityEnum, ReactEnum } from "../enums/Post.enum.js";
 
 export interface IPost{
     folderId:string;
     content?:string;
     attachments?:string;
-    likes:Types.ObjectId[]|IUser[];
+    likes?:{react:ReactEnum,createdBy:Types.ObjectId|IUser}[];
      tags?:Types.ObjectId[]|IUser[];
      availability:AvailabilityEnum;
 

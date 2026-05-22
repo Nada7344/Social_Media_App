@@ -52,7 +52,6 @@ export class S3Service {
             throw new BadRequestException("Fail to upload this asset")
         }
         await this.client.send(command)
-        console.log(command.input?.Key);
 
         return command.input?.Key
     }
@@ -104,7 +103,7 @@ export class S3Service {
         ContentType
 
     }: {
-        storageApproach: StorageApproachEnum,
+        storageApproach?: StorageApproachEnum,
         uploadApproach?: UploadApproachEnum,
         Bucket?: string,
         path?: string,
@@ -132,20 +131,23 @@ export class S3Service {
                 })
             )
             urls = data.map(ele => ele.Key as string)
-        } else {
-            await Promise.all(
-                files.map((file) => {
-                    return this.uploadAsset({
-                        storageApproach,
-                        file,
-                        ACL,
-                        Bucket,
-                        ContentType,
-                        path
-                    })
-                })
-            )
-        }
+        }else {
+
+    const data = await Promise.all(
+        files.map((file) => {
+            return this.uploadAsset({
+                storageApproach,
+                file,
+                ACL,
+                Bucket,
+                ContentType,
+                path
+            })
+        })
+    )
+
+    urls = data
+}
 
 
         return urls;

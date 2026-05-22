@@ -31,6 +31,46 @@ class BaseRepository {
         }
         return await doc.exec();
     }
+    //find
+    async find({ filter, projection, options }) {
+        const doc = this.model.find(filter, projection);
+        if (options?.populate) {
+            doc.populate(options.populate);
+            return await doc.exec();
+        }
+        if (options?.lean) {
+            doc.lean(options.lean);
+            return await doc.exec();
+        }
+        if (options?.skip) {
+            doc.skip(options.skip);
+            return await doc.exec();
+        }
+        if (options?.limit) {
+            doc.limit(options.limit);
+            return await doc.exec();
+        }
+        return await doc.exec();
+    }
+    //pagination
+    async Pagination({ filter, projection, options = {}, page = 0, size = 5 }) {
+        let count = -1;
+        if (Number(page) > 0) {
+            page = parseInt(page);
+            size = parseInt(size);
+            options.skip = (page - 1) * size;
+            options.limit = size;
+            count = await this.model.countDocuments({ filter });
+        }
+        const docs = await this.find({ filter: filter || {}, projection, options });
+        return {
+            docs,
+            ...(Number(page) > 0 ?
+                { currentPage: page,
+                    size,
+                    pages: Math.ceil(count / parseInt(size)) } : {})
+        };
+    }
     async findById({ _id, projection, options }) {
         const doc = this.model.findById(_id, projection);
         if (options?.populate) {
@@ -43,10 +83,14 @@ class BaseRepository {
         }
         return await doc.exec();
     }
-    async findOneAndUpdate({ filter, update, options = { new: true } }) {
-        return await this.model.findOneAndUpdate(filter, update, options);
+    async findOneAndUpdate({ filter, update, options = { returnDocument: 'after' } }) {
+        if (Array.isArray(update)) {
+            update.push({ $set: { __v: { $add: ["$__v", 1] } } });
+            return await this.model.findOneAndUpdate(filter, update, { ...options, updatePipeline: true });
+        }
+        return await this.model.findOneAndUpdate(filter, update, { ...options, $incr: { __v: 1 } });
     }
-    async findByIDAndUpdate({ _id, update, options = { new: true } }) {
+    async findByIDAndUpdate({ _id, update, options = { returnDocument: 'after' } }) {
         return await this.model.findByIdAndUpdate(_id, update, options);
     }
     async findOneAndDelete({ filter, }) {

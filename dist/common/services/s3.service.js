@@ -32,7 +32,6 @@ class S3Service {
             throw new domain_exception_js_1.BadRequestException("Fail to upload this asset");
         }
         await this.client.send(command);
-        console.log(command.input?.Key);
         return command.input?.Key;
     }
     async uploadLargeAsset({ storageApproach = multer_enum_js_1.StorageApproachEnum.MEMORY, Bucket = config_js_1.AWS_BUCKET_NAME, path = "general", file, ACL = client_s3_1.ObjectCannedACL.private, ContentType }) {
@@ -68,7 +67,7 @@ class S3Service {
             urls = data.map(ele => ele.Key);
         }
         else {
-            await Promise.all(files.map((file) => {
+            const data = await Promise.all(files.map((file) => {
                 return this.uploadAsset({
                     storageApproach,
                     file,
@@ -78,6 +77,7 @@ class S3Service {
                     path
                 });
             }));
+            urls = data;
         }
         return urls;
     }

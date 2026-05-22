@@ -23,7 +23,8 @@ export class NotificationService {
 
 
     async sendNotfication(
-        { token,
+        { 
+            token,
             data: {
                 title,
                 body

@@ -1,6 +1,6 @@
 import {HydratedDocument, model, models, Schema} from "mongoose"
 import { IPost } from "../../common/interfaces/post.interface.js";
-import { AvailabilityEnum } from "../../common/enums/Post.enum.js";
+import { AvailabilityEnum, ReactEnum } from "../../common/enums/Post.enum.js";
 import { Types } from "mongoose";
 
 
@@ -16,7 +16,13 @@ const  postSchema = new Schema<IPost>({
     },
     attachments:{type:[String]},
     availability:{type:Number ,enum:AvailabilityEnum ,default:AvailabilityEnum.PUBLIC},
-    likes:[{type:Types.ObjectId , ref:"User"}],
+    likes:[
+     {
+        _id:false,
+      react:{type:Number ,enum:ReactEnum ,default:ReactEnum.LIKE},
+      createdBy:{type:Types.ObjectId , ref:"User"}
+     }
+    ],
     tags:[{type:Types.ObjectId , ref:"User"}],
     updatedBy:{type:Types.ObjectId , ref:"User"},
     createdBy:{type:Types.ObjectId , ref:"User",required:true},
@@ -33,11 +39,16 @@ const  postSchema = new Schema<IPost>({
     toObject:{virtuals :true}
 })
  
+//postId => comment.postId
 
+postSchema.virtual("comments",{
+  localField:"_id",
+  foreignField:"postId",
+  ref:"Comment",
+  justOne:true
+})
 
 //Hooks 
-
-
 
 
 //Update 
@@ -79,7 +90,7 @@ const  postSchema = new Schema<IPost>({
 
 
 //soft delete
-  postSchema.pre(["findOne","find"],async function () {
+  postSchema.pre(["findOne","find","countDocuments"],async function () {
     const query=this.getQuery();
     if(query.paranoid ===false){
     this.setQuery({...query})

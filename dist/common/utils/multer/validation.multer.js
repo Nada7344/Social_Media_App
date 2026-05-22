@@ -8,7 +8,6 @@ exports.fileFieldValidation = {
 };
 const fileFilter = (validation) => {
     return function (req, file, cb) {
-        console.log(file.mimetype);
         if (!validation.includes(file.mimetype)) {
             return cb(new exceptions_1.BadRequestException("Invalid file format"));
         }

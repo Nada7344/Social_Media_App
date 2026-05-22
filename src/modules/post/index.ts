@@ -1,6 +1,1 @@
-import { Router } from "express"
-const router = Router()
-
-
-
-export default router;
+export {default as postRouter} from'./post.controller'

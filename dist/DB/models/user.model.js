@@ -42,6 +42,7 @@ const userSchema = new mongoose_1.Schema({
     },
     profileImage: String,
     profileCoversImage: [String],
+    friends: [{ type: mongoose_1.Types.ObjectId, ref: "user" }],
     confirmEmail: { type: Date, required: false },
     changeCredentialTime: { type: Date, required: false },
     deletedAt: { type: Date },

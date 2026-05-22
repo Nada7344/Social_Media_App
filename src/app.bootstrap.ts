@@ -12,7 +12,9 @@ import { s3Service } from './common/services/s3.service.js';
 import {pipeline} from "node:stream"
 import {promisify}from "node:util"
 import { notificationService } from './common/services/notification.service.js';
+import { postRouter } from './modules/post/index.js';
 
+ 
 const s3WriteStream = promisify(pipeline)
 
 const bootstrap = async () => {
@@ -23,6 +25,7 @@ const bootstrap = async () => {
 
     app.use('/auth', authRouter)
     app.use('/user', userRouter)
+    app.use('/post', postRouter)
 
  app.post("/send-notification", async(req: Request, res: Response, next: NextFunction):Promise<express.Response> => {
        

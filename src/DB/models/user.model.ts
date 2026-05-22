@@ -1,4 +1,4 @@
-import {HydratedDocument, model, models, Schema} from "mongoose"
+import {HydratedDocument, model, models, Schema, Types} from "mongoose"
 import { IUser } from "../../common/interfaces/user.interface.js";
 import { GenderEnum, ProviderEnum, RoleEnum } from "../../common/enums/user.enum.js";
 import { generateEncryption, generateHash } from "../../common/utils/index.js";
@@ -49,6 +49,7 @@ const  userSchema = new Schema<IUser>({
     },
      profileImage: String,
     profileCoversImage: [String],
+    friends:[{type:Types.ObjectId ,ref:"user"}],
     confirmEmail: {type:Date ,required:false},
     changeCredentialTime:{type:Date ,required:false},
     deletedAt:{ type:Date },

@@ -13,7 +13,13 @@ const postSchema = new mongoose_1.Schema({
     },
     attachments: { type: [String] },
     availability: { type: Number, enum: Post_enum_js_1.AvailabilityEnum, default: Post_enum_js_1.AvailabilityEnum.PUBLIC },
-    likes: [{ type: mongoose_2.Types.ObjectId, ref: "User" }],
+    likes: [
+        {
+            _id: false,
+            react: { type: Number, enum: Post_enum_js_1.ReactEnum, default: Post_enum_js_1.ReactEnum.LIKE },
+            createdBy: { type: mongoose_2.Types.ObjectId, ref: "User" }
+        }
+    ],
     tags: [{ type: mongoose_2.Types.ObjectId, ref: "User" }],
     updatedBy: { type: mongoose_2.Types.ObjectId, ref: "User" },
     createdBy: { type: mongoose_2.Types.ObjectId, ref: "User", required: true },
@@ -28,6 +34,13 @@ const postSchema = new mongoose_1.Schema({
     autoIndex: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
+});
+//postId => comment.postId
+postSchema.virtual("comments", {
+    localField: "_id",
+    foreignField: "postId",
+    ref: "Comment",
+    justOne: true
 });
 //Hooks 
 //Update 
@@ -59,7 +72,7 @@ postSchema.pre(["deleteOne", "findOneAndDelete"], async function () {
     }
 });
 //soft delete
-postSchema.pre(["findOne", "find"], async function () {
+postSchema.pre(["findOne", "find", "countDocuments"], async function () {
     const query = this.getQuery();
     if (query.paranoid === false) {
         this.setQuery({ ...query });

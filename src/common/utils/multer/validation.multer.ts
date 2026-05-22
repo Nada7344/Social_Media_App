@@ -13,7 +13,7 @@ export const fileFilter = (validation: string[]) => {
     file: Express.Multer.File,
     cb: FileFilterCallback
   ) {
-    console.log(file.mimetype);
+
 
     if (!validation.includes(file.mimetype)) {
       return cb(new BadRequestException("Invalid file format"));
