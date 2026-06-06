@@ -10,7 +10,7 @@ import { StorageApproachEnum, UploadApproachEnum } from "../../common/enums/mult
 import { NotFoundException } from "../../common/exceptions/domain.exception.js";
 
 
-class UserService {
+export class UserService {
 
         private userRepository :UserRepository
         private redis :RedisService
@@ -64,8 +64,8 @@ class UserService {
 
     
     async profile (user:HydratedDocument<IUser>){
-        
-       return user;
+        const data = await this.userRepository.findOne({}) as HydratedDocument<IUser>
+       return data;
     }
 
 

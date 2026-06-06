@@ -1,6 +1,6 @@
 import express from 'express'
 import type { Express, Request, Response, NextFunction } from 'express'
-import { authRouter } from './modules/index';
+import { authRouter, schema } from './modules/index';
 import { globalErrorHandler } from './middleware/error.middleware';
 import { connectDB } from './DB/connection.db.js';
 import { PORT } from './config/config.js';
@@ -13,6 +13,8 @@ import {pipeline} from "node:stream"
 import {promisify}from "node:util"
 import { notificationService } from './common/services/notification.service.js';
 import { postRouter } from './modules/post/index.js';
+import { createHandler } from "graphql-http/lib/use/express"
+import { authentecation } from './middleware/authentication.middleware.js';
 
  
 const s3WriteStream = promisify(pipeline)
@@ -27,6 +29,12 @@ const bootstrap = async () => {
     app.use('/user', userRouter)
     app.use('/post', postRouter)
 
+//GQL
+    app.use("/graphql", authentecation(),createHandler({
+        schema: schema, context: (req) => ({user:req.raw.user ,decoded:req.raw.decoded})
+    }))
+
+//test notification
  app.post("/send-notification", async(req: Request, res: Response, next: NextFunction):Promise<express.Response> => {
        
         await notificationService.sendNotfication({

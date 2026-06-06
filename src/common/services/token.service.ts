@@ -202,3 +202,5 @@ export class TokenService {
   return;
 }
 }
+
+export const tokenService =new TokenService()

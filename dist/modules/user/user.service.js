@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserService = void 0;
 const user_repository_js_1 = require("../../DB/repository/user.repository.js");
 const token_service_js_1 = require("../../common/services/token.service.js");
 const redis_service_js_1 = require("../../common/services/redis.service.js");
@@ -51,7 +52,8 @@ class UserService {
         return user;
     }
     async profile(user) {
-        return user;
+        const data = await this.userRepository.findOne({});
+        return data;
     }
     async logout(flag, user, { jti, iat }) {
         let status = 200;
@@ -96,4 +98,5 @@ class UserService {
         return account;
     }
 }
+exports.UserService = UserService;
 exports.default = new UserService();

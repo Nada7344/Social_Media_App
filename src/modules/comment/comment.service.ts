@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto"
 import { BadRequestException, NotFoundException } from "../../common/exceptions/domain.exception.js"
 import { NotificationService } from "../../common/services/notification.service.js"
 import { redisService, RedisService } from "../../common/services/redis.service.js"

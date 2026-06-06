@@ -60,7 +60,7 @@ class BaseRepository {
             size = parseInt(size);
             options.skip = (page - 1) * size;
             options.limit = size;
-            count = await this.model.countDocuments({ filter });
+            count = await this.model.countDocuments(filter);
         }
         const docs = await this.find({ filter: filter || {}, projection, options });
         return {
